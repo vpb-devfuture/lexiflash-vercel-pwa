@@ -1,0 +1,16 @@
+{
+  "name": "LexiFlash - Smart English Flashcards",
+  "short_name": "LexiFlash",
+  "description": "Flashcard học tiếng Anh với SM-2, Gemini AI và Google Drive sync.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0908",
+  "theme_color": "#d4a574",
+  "icons": [
+    { "src": "/icons/icon16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "/icons/icon32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/icons/icon48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "/icons/icon128.png", "sizes": "128x128", "type": "image/png" }
+  ]
+}

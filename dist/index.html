@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>LexiFlash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon32.png" />
+  <link rel="stylesheet" href="/popup/popup.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <button class="avatar-btn" id="btnAccount" title="Tài khoản">
+          <div class="avatar-fallback" id="avatarFallback">L</div>
+          <img class="avatar-img" id="avatarImg" alt="" />
+        </button>
+        <div class="brand-text">
+          <h1 id="brandName">LexiFlash</h1>
+          <span class="tagline" id="brandTagline">Daily English mastery</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="btnLibrary" title="Thư viện từ đã học">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </button>
+        <button class="icon-btn" id="btnGenMoreHeader" title="Sinh thêm từ vựng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        </button>
+        <button class="icon-btn" id="btnChallenge" title="Thử thách đặt câu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn" id="btnStats" title="Thống kê">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M9 17V9m4 8V5m4 12v-6"/></svg>
+        </button>
+        <button class="icon-btn" id="btnSettings" title="Cài đặt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Progress bar -->
+    <div class="progress-section">
+      <div class="progress-meta">
+        <span id="progressLabel">Hôm nay · 0/0</span>
+        <span class="streak" id="streakBadge">🔥 <span id="streakCount">0</span></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div class="state state-loading hidden" id="stateLoading">
+      <div class="spinner"></div>
+      <p class="loading-text" id="loadingText">Đang chuẩn bị bài học...</p>
+    </div>
+
+    <!-- Login state -->
+    <div class="state state-login hidden" id="stateLogin">
+      <div class="login-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <h2>Chào mừng đến LexiFlash</h2>
+      <p>Đăng nhập bằng Google để bắt đầu hành trình học tiếng Anh. Dữ liệu được lưu an toàn trên Google Drive của bạn.</p>
+      <button class="btn-google" id="btnLoginGoogle">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        <span>Đăng nhập với Google</span>
+      </button>
+      <p class="login-hint" id="loginHint"></p>
+    </div>
+
+    <!-- Empty state -->
+    <div class="state state-empty hidden" id="stateEmpty">
+      <div class="empty-icon">📚</div>
+      <h2>Chưa có flashcard nào</h2>
+      <p id="emptyMessage">Hãy sinh bộ từ đầu tiên để bắt đầu hành trình học tập!</p>
+      <button class="btn-primary" id="btnGenerate">
+        <span>Sinh 10 từ đầu tiên</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </button>
+      <button class="btn-secondary" id="btnOpenSettings" style="margin-top: 10px;">⚙ Mở cài đặt</button>
+    </div>
+
+    <!-- Done state -->
+    <div class="state state-done hidden" id="stateDone">
+      <div class="done-icon">✨</div>
+      <h2>Xuất sắc!</h2>
+      <p>Bạn đã hoàn thành tất cả thẻ ôn tập hôm nay.</p>
+      <div class="done-stats">
+        <div class="stat-pill">
+          <strong id="doneReviewed">0</strong>
+          <span>đã ôn</span>
+        </div>
+        <div class="stat-pill">
+          <strong id="doneAccuracy">0%</strong>
+          <span>chính xác</span>
+        </div>
+      </div>
+      <button class="btn-secondary" id="btnReviewAgain">Học lại các từ khó</button>
+    </div>
+
+    <!-- Card area -->
+    <main class="card-stage" id="cardStage">
+      <div class="card-deck-shadow"></div>
+
+      <div class="flashcard" id="flashcard">
+        <!-- Front: English -->
+        <div class="card-face card-front">
+          <div class="card-meta">
+            <span class="pos-badge" id="frontPos">noun</span>
+            <span class="difficulty-dots" id="difficultyDots"></span>
+          </div>
+
+          <div class="card-content">
+            <h2 class="word" id="frontWord">word</h2>
+            <p class="ipa" id="frontIpa">/wɜːrd/</p>
+          </div>
+
+          <div class="card-actions">
+            <button class="action-chip" id="btnSpeak" title="Phát âm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <span>Phát âm</span>
+            </button>
+            <button class="action-chip" id="btnForms" title="Các dạng từ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>Dạng từ</span>
+            </button>
+            <button class="action-chip" id="btnExamples" title="Ví dụ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+              <span>Ví dụ</span>
+            </button>
+          </div>
+
+          <p class="flip-hint">Click vào thẻ để xem nghĩa</p>
+        </div>
+
+        <!-- Back: Vietnamese -->
+        <div class="card-face card-back">
+          <div class="card-meta">
+            <span class="back-label">Nghĩa tiếng Việt</span>
+          </div>
+
+          <div class="card-content">
+            <h2 class="meaning" id="backMeaning">nghĩa</h2>
+            <div class="mnemonic" id="backMnemonic"></div>
+          </div>
+
+          <p class="flip-hint">Click để quay lại</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Review controls (only after flip) -->
+    <div class="review-controls hidden" id="reviewControls">
+      <button class="grade-btn grade-again" data-grade="0">
+        <span class="grade-label">Lại</span>
+        <span class="grade-interval" data-interval-for="0">&lt;1m</span>
+      </button>
+      <button class="grade-btn grade-hard" data-grade="3">
+        <span class="grade-label">Khó</span>
+        <span class="grade-interval" data-interval-for="3">1d</span>
+      </button>
+      <button class="grade-btn grade-good" data-grade="4">
+        <span class="grade-label">Tốt</span>
+        <span class="grade-interval" data-interval-for="4">3d</span>
+      </button>
+      <button class="grade-btn grade-easy" data-grade="5">
+        <span class="grade-label">Dễ</span>
+        <span class="grade-interval" data-interval-for="5">7d</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Dialog: Word Forms -->
+  <div class="dialog-backdrop hidden" id="dialogForms">
+    <div class="dialog">
+      <header class="dialog-header">
+        <h3>Các dạng của <em id="formsDialogWord">word</em></h3>
+        <button class="dialog-close" data-close="dialogForms">×</button>
+      </header>
+      <div class="dialog-body" id="formsList"></div>
+    </div>
+  </div>
+
+  <!-- Dialog: Examples -->
+  <div class="dialog-backdrop hidden" id="dialogExamples">
+    <div class="dialog dialog-wide">
+      <header class="dialog-header">
+        <h3>Ví dụ với <em id="examplesDialogWord">word</em></h3>
+        <button class="dialog-close" data-close="dialogExamples">×</button>
+      </header>
+      <div class="dialog-body" id="examplesList"></div>
+    </div>
+  </div>
+
+  <!-- Dialog: Stats -->
+  <div class="dialog-backdrop hidden" id="dialogStats">
+    <div class="dialog">
+      <header class="dialog-header">
+        <h3>Thống kê học tập</h3>
+        <button class="dialog-close" data-close="dialogStats">×</button>
+      </header>
+      <div class="dialog-body">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-num" id="statTotal">0</span>
+            <span class="stat-label">Tổng số từ</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="statMastered">0</span>
+            <span class="stat-label">Đã thuộc</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="statDue">0</span>
+            <span class="stat-label">Đến hạn</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="statRetention">0%</span>
+            <span class="stat-label">Tỷ lệ nhớ</span>
+          </div>
+        </div>
+        <div class="stat-actions">
+          <button class="btn-secondary btn-sm" id="btnSyncNow">Đồng bộ ngay</button>
+          <button class="btn-secondary btn-sm" id="btnOpenGenMore">Sinh thêm từ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Generate More -->
+  <div class="dialog-backdrop hidden" id="dialogGenMore">
+    <div class="dialog">
+      <header class="dialog-header">
+        <h3>Sinh thêm từ vựng</h3>
+        <button class="dialog-close" data-close="dialogGenMore">×</button>
+      </header>
+      <div class="dialog-body">
+        <p class="dialog-desc">Sinh thêm batch từ vựng theo nhu cầu. Không ảnh hưởng đến tiến độ tăng độ khó tự nhiên hàng ngày.</p>
+
+        <div class="form-field">
+          <label>Số lượng từ</label>
+          <div class="chip-group" data-group="count">
+            <button class="chip" data-val="5">5</button>
+            <button class="chip selected" data-val="10">10</button>
+            <button class="chip" data-val="20">20</button>
+            <button class="chip" data-val="30">30</button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Độ khó <span class="hint" id="diffLabel">B1 (4)</span></label>
+          <input type="range" id="genDifficulty" min="1" max="10" step="1" value="4" class="range-input"/>
+          <div class="range-marks">
+            <span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Chủ đề (tuỳ chọn)</label>
+          <input type="text" id="genTheme" placeholder="vd: business, travel, IT, daily life..." class="text-input" />
+        </div>
+
+        <button class="btn-primary btn-full" id="btnDoGenMore">
+          <span>Sinh từ mới</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Library -->
+  <div class="dialog-backdrop hidden" id="dialogLibrary">
+    <div class="dialog dialog-tall">
+      <header class="dialog-header">
+        <h3>Thư viện từ <span id="libraryCount" class="count-badge">0</span></h3>
+        <button class="dialog-close" data-close="dialogLibrary">×</button>
+      </header>
+      <div class="library-toolbar">
+        <input type="text" id="librarySearch" placeholder="Tìm từ..." class="text-input search-input" />
+        <div class="filter-chips">
+          <button class="filter-chip selected" data-filter="all">Tất cả</button>
+          <button class="filter-chip" data-filter="due">Đến hạn</button>
+          <button class="filter-chip" data-filter="new">Mới</button>
+          <button class="filter-chip" data-filter="learning">Đang học</button>
+          <button class="filter-chip" data-filter="mastered">Đã thuộc</button>
+        </div>
+      </div>
+      <div class="dialog-body library-body" id="libraryList"></div>
+    </div>
+  </div>
+
+  <!-- Dialog: Word Detail (from library) -->
+  <div class="dialog-backdrop hidden" id="dialogWordDetail">
+    <div class="dialog dialog-tall">
+      <header class="dialog-header">
+        <h3 id="detailTitle">word</h3>
+        <button class="dialog-close" data-close="dialogWordDetail">×</button>
+      </header>
+      <div class="dialog-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- Dialog: Sentence Challenge -->
+  <div class="dialog-backdrop hidden" id="dialogChallenge">
+    <div class="dialog dialog-tall">
+      <header class="dialog-header">
+        <h3>✍️ Thử thách đặt câu</h3>
+        <button class="dialog-close" data-close="dialogChallenge">×</button>
+      </header>
+      <div class="dialog-body" id="challengeBody">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Account picker -->
+  <div class="dialog-backdrop hidden" id="dialogAccount">
+    <div class="dialog">
+      <header class="dialog-header">
+        <h3>Tài khoản</h3>
+        <button class="dialog-close" data-close="dialogAccount">×</button>
+      </header>
+      <div class="dialog-body">
+        <div class="account-current" id="accountCurrent">
+          <!-- Filled dynamically -->
+        </div>
+        <div class="account-section-title">Tài khoản khác</div>
+        <div class="account-list" id="accountList">
+          <!-- Filled dynamically -->
+        </div>
+        <button class="btn-secondary btn-full" id="btnAddAccount" style="margin-top:12px;">
+          <span>+ Thêm tài khoản Google</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Sync Conflict -->
+  <div class="dialog-backdrop hidden" id="dialogConflict">
+    <div class="dialog">
+      <header class="dialog-header">
+        <h3>⚠️ Có xung đột dữ liệu</h3>
+      </header>
+      <div class="dialog-body">
+        <p class="dialog-desc" id="conflictDesc">
+          Dữ liệu trên Drive và trên máy này khác nhau. Vui lòng chọn cách xử lý:
+        </p>
+        <div class="conflict-options">
+          <button class="conflict-option" id="btnUseLocal">
+            <div class="conflict-option-title">Giữ dữ liệu máy này</div>
+            <div class="conflict-option-desc" id="localStats">...</div>
+          </button>
+          <button class="conflict-option" id="btnUseDrive">
+            <div class="conflict-option-title">Lấy dữ liệu từ Drive</div>
+            <div class="conflict-option-desc" id="driveStats">...</div>
+          </button>
+          <button class="conflict-option" id="btnMergeData">
+            <div class="conflict-option-title">Gộp cả hai (an toàn)</div>
+            <div class="conflict-option-desc">Lấy union — giữ tất cả từ ở cả 2 bên</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast hidden" id="toast"></div>
+
+  <script type="module" src="/popup/popup.js"></script>
+</body>
+</html>

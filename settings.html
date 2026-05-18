@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>LexiFlash · Cài đặt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon32.png" />
+  <link rel="stylesheet" href="/options/options.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="brand">
+        <div class="logo">L</div>
+        <div>
+          <h1>LexiFlash</h1>
+          <span class="subtitle">Settings & Configuration</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- Section: Gemini API -->
+      <section class="card">
+        <div class="section-header">
+          <h2>1. Gemini AI</h2>
+          <span class="status-pill" id="geminiStatus">Chưa kiểm tra</span>
+        </div>
+        <p class="section-desc">
+          Cần API key để sinh nội dung flashcard. Lấy miễn phí tại
+          <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+        </p>
+
+        <div class="field">
+          <label for="apiKey">Gemini API Key</label>
+          <div class="input-with-toggle">
+            <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off" />
+            <button class="toggle-visibility" id="togglePw" type="button">👁</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="model">Model</label>
+          <select id="model">
+            <option value="gemini-2.5-flash">gemini-2.5-flash (khuyến nghị, nhanh & free tier rộng)</option>
+            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (nhanh nhất, rẻ nhất)</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro (chất lượng cao nhất)</option>
+            <option value="gemini-3-flash-preview">gemini-3-flash-preview (mới nhất, đang preview)</option>
+            <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (frontier model)</option>
+          </select>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn-secondary" id="btnTestApi">Kiểm tra API key</button>
+        </div>
+      </section>
+
+      <!-- Section: Google Drive -->
+      <section class="card">
+        <div class="section-header">
+          <h2>2. Google Drive Sync</h2>
+          <span class="status-pill" id="driveStatus">Chưa kết nối</span>
+        </div>
+        <p class="section-desc">
+          Dữ liệu flashcard được lưu trong folder <code>flashcard-db</code> trên Google Drive của bạn.
+          Cần OAuth Web Client ID (xem hướng dẫn bên dưới).
+        </p>
+
+
+
+        <div class="field">
+          <label for="googleOAuthClientId">Google OAuth Web Client ID</label>
+          <input type="text" id="googleOAuthClientId" placeholder="xxx.apps.googleusercontent.com" autocomplete="off" />
+          <small>Dùng OAuth client type <strong>Web application</strong>, không dùng Chrome Extension client ID.</small>
+        </div>
+
+        <div class="field">
+          <label for="folderName">Tên folder trên Drive</label>
+          <input type="text" id="folderName" value="flashcard-db" />
+        </div>
+
+        <div class="actions-row">
+          <button class="btn-secondary" id="btnConnectDrive">Kết nối Google Drive</button>
+          <button class="btn-secondary" id="btnRestoreDrive">Khôi phục từ Drive</button>
+          <button class="btn-secondary btn-danger" id="btnDisconnect">Đăng xuất</button>
+        </div>
+
+        <div class="checkbox-field">
+          <input type="checkbox" id="autoSync" />
+          <label for="autoSync">Tự động đồng bộ mỗi 30 phút</label>
+        </div>
+      </section>
+
+      <!-- Section: Learning -->
+      <section class="card">
+        <div class="section-header">
+          <h2>3. Học tập</h2>
+        </div>
+        <p class="section-desc">Cấu hình cách extension sinh từ và quản lý ôn tập.</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="wordsPerDay">Số từ mỗi ngày</label>
+            <input type="number" id="wordsPerDay" min="1" max="30" value="10" />
+          </div>
+          <div class="field">
+            <label for="currentDifficulty">Độ khó hiện tại (1-10)</label>
+            <input type="number" id="currentDifficulty" min="1" max="10" step="0.1" value="1" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="diffIncrement">Tốc độ tăng độ khó (điểm/ngày)</label>
+          <input type="number" id="diffIncrement" min="0" max="2" step="0.1" value="1" />
+          <small>Mức độ khó tăng dần để thử thách bạn. 1.0 = tăng 1 cấp / 3 ngày.</small>
+        </div>
+
+        <div class="checkbox-field">
+          <input type="checkbox" id="notifications" />
+          <label for="notifications">Thông báo khi có từ mới mỗi sáng</label>
+        </div>
+      </section>
+
+      <!-- Section: Manual actions -->
+      <section class="card">
+        <div class="section-header">
+          <h2>4. Hành động thủ công</h2>
+        </div>
+        <div class="actions-grid">
+          <button class="btn-secondary" id="btnGenNow">🎲 Sinh 10 từ mới ngay</button>
+          <button class="btn-secondary" id="btnSyncNow">☁️ Đồng bộ Drive ngay</button>
+          <button class="btn-secondary btn-danger" id="btnClearData">🗑 Xoá toàn bộ dữ liệu</button>
+        </div>
+      </section>
+
+      <!-- Help section -->
+      <section class="card card-help">
+        <div class="section-header">
+          <h2>Hướng dẫn cấu hình OAuth Google Drive</h2>
+        </div>
+        <ol class="help-list">
+          <li>Vào <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> → tạo project mới hoặc dùng project hiện có.</li>
+          <li>Enable <strong>Google Drive API</strong> trong "APIs & Services".</li>
+          <li>Vào "Credentials" → "Create Credentials" → "OAuth client ID".</li>
+          <li>Chọn application type: <strong>Web application</strong>.</li>
+          <li>Trong <strong>Authorized JavaScript origins</strong>, thêm origin local/deploy, ví dụ <code>http://localhost:3000</code> và domain Vercel của bạn.</li>
+          <li>Copy Client ID và dán vào trường <strong>Google OAuth Web Client ID</strong> ở trên.</li>
+        </ol>
+
+        <p class="footnote">
+          Origin hiện tại: <code id="extId">đang tải...</code>
+        </p>
+      </section>
+    </main>
+
+    <div class="toast hidden" id="toast"></div>
+  </div>
+
+  <script type="module" src="/options/options.js"></script>
+</body>
+</html>

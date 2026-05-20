@@ -223,7 +223,7 @@ function showLoading(msg = 'Đang tải...') {
 }
 
 function showState(name) {
-  ['loading', 'empty', 'done'].forEach(s => {
+  ['loading', 'empty', 'done', 'login'].forEach(s => {
     const el = $('state' + s.charAt(0).toUpperCase() + s.slice(1));
     if (el) el.classList.toggle('hidden', s !== name);
   });
@@ -235,6 +235,7 @@ function hideAllStates() {
   els.stateLoading.classList.add('hidden');
   els.stateEmpty.classList.add('hidden');
   els.stateDone.classList.add('hidden');
+  $('stateLogin').classList.add('hidden');
   els.stage.classList.remove('hidden');
 }
 
@@ -287,7 +288,7 @@ function renderCard(card) {
 
   els.backMeaning.textContent = card.primaryMeaning;
   if (card.mnemonic) {
-    els.backMnemonic.innerHTML = card.mnemonic;
+    els.backMnemonic.textContent = card.mnemonic;
     els.backMnemonic.classList.remove('hidden');
   } else {
     els.backMnemonic.classList.add('hidden');
@@ -428,7 +429,11 @@ function bindGlobalHandlers() {
   $('btnSyncNow')?.addEventListener('click', async () => {
     toast('🔄 Đang đồng bộ Google Drive...');
     const res = await sendAppMessage({ type: 'SYNC_NOW' });
-    toast(res?.success ? '✓ Đồng bộ thành công' : '✗ Đồng bộ thất bại');
+    if (res?.success) {
+      toast(res.skipped ? `✓ ${res.reason || 'Không cần đồng bộ'}` : '✓ Đồng bộ thành công');
+    } else {
+      toast('✗ ' + (res?.error || 'Đồng bộ thất bại'), 6000);
+    }
   });
 
   $('btnOpenGenMore')?.addEventListener('click', () => {
@@ -478,7 +483,7 @@ async function handleGrade(grade) {
   await persistSessionStats();
 
   // Trigger sync in background (fire and forget — ignore connection errors)
-  sendAppMessage({ type: 'SYNC_NOW' }).catch(() => {});
+  sendAppMessage({ type: 'SYNC_NOW', force: false }).catch(() => {});
 
   // Animate swap
   els.card.classList.add('swap-out');
@@ -576,9 +581,7 @@ function openExamplesDialog() {
     examples.forEach(ex => {
       const div = document.createElement('div');
       div.className = 'example-item';
-      const highlighted = ex.highlight
-        ? ex.sentence.replace(new RegExp(`(${escapeRegex(ex.highlight)})`, 'gi'), '<mark>$1</mark>')
-        : ex.sentence;
+      const highlighted = highlightHtml(ex.sentence, ex.highlight);
       div.innerHTML = `
         <span class="example-position">${escapeHtml(ex.position || '')}</span>
         <p class="example-sentence">${highlighted}</p>
@@ -810,9 +813,7 @@ function openWordDetail(card) {
       <div class="detail-section">
         <div class="detail-section-title">Ví dụ</div>
         ${card.examples.map(ex => {
-          const hl = ex.highlight
-            ? ex.sentence.replace(new RegExp(`(${escapeRegex(ex.highlight)})`, 'gi'), '<mark>$1</mark>')
-            : escapeHtml(ex.sentence);
+          const hl = highlightHtml(ex.sentence, ex.highlight);
           return `
             <div class="example-item">
               <span class="example-position">${escapeHtml(ex.position || '')}</span>
@@ -1233,6 +1234,27 @@ function escapeHtml(s) {
 
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightHtml(text, highlight) {
+  const source = String(text ?? '');
+  const needle = String(highlight ?? '').trim();
+  if (!needle) return escapeHtml(source);
+
+  const re = new RegExp(escapeRegex(needle), 'gi');
+  let out = '';
+  let lastIndex = 0;
+  let match;
+
+  while ((match = re.exec(source)) !== null) {
+    out += escapeHtml(source.slice(lastIndex, match.index));
+    out += `<mark>${escapeHtml(match[0])}</mark>`;
+    lastIndex = match.index + match[0].length;
+    if (match[0].length === 0) break;
+  }
+
+  out += escapeHtml(source.slice(lastIndex));
+  return out;
 }
 
 // === Streak bump on first review of the day ===

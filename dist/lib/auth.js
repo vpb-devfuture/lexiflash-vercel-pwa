@@ -10,6 +10,7 @@ const GIS_SCRIPT = 'https://accounts.google.com/gsi/client';
 
 const STORAGE_USERS = 'lexiflash_users_v1';
 const STORAGE_CURRENT_USER = 'lexiflash_current_user_v1';
+const TOKEN_REFRESH_MARGIN_MS = 60_000;
 
 const GOOGLE_SCOPES = [
   'openid',
@@ -104,6 +105,13 @@ async function fetchUserInfo(accessToken) {
   return await res.json();
 }
 
+function createAuthError(message, code, cause) {
+  const err = new Error(message);
+  err.code = code;
+  if (cause) err.cause = cause;
+  return err;
+}
+
 async function loadUsers() {
   const data = await chrome.storage.local.get(STORAGE_USERS);
   return data[STORAGE_USERS] || {};
@@ -157,6 +165,45 @@ export async function loginNewUser() {
     email: userRecord.email,
     name: userRecord.name,
     picture: userRecord.picture
+  };
+}
+
+export async function ensureDriveAuth() {
+  const current = await getCurrentUser();
+  if (!current) return await loginNewUser();
+
+  const users = await loadUsers();
+  const existing = users[current.userId];
+  if (!existing) return await loginNewUser();
+
+  let tokenInfo;
+  try {
+    tokenInfo = await requestAccessToken({ prompt: '' });
+  } catch {
+    tokenInfo = await requestAccessToken({ prompt: 'select_account consent' });
+  }
+  const userInfo = await fetchUserInfo(tokenInfo.token);
+  if (userInfo.sub !== current.userId) {
+    throw new Error(`Google đang trả về account khác. Vui lòng đăng xuất Google hoặc chọn lại ${current.email}.`);
+  }
+
+  users[current.userId] = {
+    ...existing,
+    email: userInfo.email || existing.email || '',
+    name: userInfo.name || existing.name || userInfo.email || 'Unknown',
+    picture: userInfo.picture || existing.picture || '',
+    accessToken: tokenInfo.token,
+    tokenExpiresAt: tokenInfo.expiresAt,
+    lastUsedAt: Date.now()
+  };
+  await saveUsers(users);
+  await setCurrentUser(current.userId);
+
+  return {
+    userId: users[current.userId].userId,
+    email: users[current.userId].email,
+    name: users[current.userId].name,
+    picture: users[current.userId].picture
   };
 }
 
@@ -225,7 +272,7 @@ export async function logoutUser(userId) {
   }
 }
 
-export async function getAccessToken() {
+export async function getAccessToken({ forceRefresh = false } = {}) {
   const data = await chrome.storage.local.get([STORAGE_USERS, STORAGE_CURRENT_USER]);
   const userId = data[STORAGE_CURRENT_USER];
   if (!userId) throw new Error('Chưa đăng nhập Google Drive');
@@ -235,15 +282,28 @@ export async function getAccessToken() {
   if (!user) throw new Error('User không tồn tại trong storage');
 
   // Reuse token if it is still valid.
-  if (user.accessToken && user.tokenExpiresAt && user.tokenExpiresAt > Date.now() + 60_000) {
+  if (!forceRefresh && user.accessToken && user.tokenExpiresAt && user.tokenExpiresAt > Date.now() + TOKEN_REFRESH_MARGIN_MS) {
     return user.accessToken;
   }
 
-  // Silent refresh if possible. If the browser blocks it, user will need to connect again.
-  const tokenInfo = await requestAccessToken({ prompt: '' });
-  const userInfo = await fetchUserInfo(tokenInfo.token);
+  let tokenInfo;
+  let userInfo;
+  try {
+    tokenInfo = await requestAccessToken({ prompt: '' });
+    userInfo = await fetchUserInfo(tokenInfo.token);
+  } catch (err) {
+    throw createAuthError(
+      'Phiên Google Drive cần được cấp quyền lại. Tài khoản LexiFlash vẫn được giữ; bấm "Kết nối Google Drive" khi cần đồng bộ.',
+      'TOKEN_REFRESH_FAILED',
+      err
+    );
+  }
+
   if (userInfo.sub !== userId) {
-    throw new Error('Token trả về không khớp với user hiện tại. Vui lòng đăng nhập lại.');
+    throw createAuthError(
+      'Token trả về không khớp với user hiện tại. Tài khoản LexiFlash vẫn được giữ; hãy kết nối lại đúng Google account.',
+      'TOKEN_USER_MISMATCH'
+    );
   }
 
   user.accessToken = tokenInfo.token;
@@ -256,9 +316,7 @@ export async function getAccessToken() {
 export async function isAuthenticated() {
   try {
     const user = await getCurrentUser();
-    if (!user) return false;
-    await getAccessToken();
-    return true;
+    return Boolean(user);
   } catch {
     return false;
   }

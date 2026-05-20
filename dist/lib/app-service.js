@@ -15,13 +15,13 @@ import {
   migrateLegacyCardsToCurrentUser
 } from './config.js';
 import { saveToDrive, loadFromDrive, checkDriveConnection } from './drive.js';
-import { loginNewUser, switchUser, logoutUser, getCurrentUser, listUsers } from './auth.js';
+import { loginNewUser, ensureDriveAuth, switchUser, logoutUser, getCurrentUser, listUsers } from './auth.js';
 
 export function openSettings() {
   window.location.href = '/settings.html';
 }
 
-async function generateBatch({ count, difficulty, skipDailyCheck = false } = {}) {
+async function generateBatch({ count, difficulty, theme = '', skipDailyCheck = false } = {}) {
   const config = await getConfig();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -42,6 +42,7 @@ async function generateBatch({ count, difficulty, skipDailyCheck = false } = {})
   const newWords = await generateDailyWords({
     count: useCount,
     difficulty: useDifficulty,
+    theme,
     exclude
   });
 
@@ -64,9 +65,9 @@ async function generateBatch({ count, difficulty, skipDailyCheck = false } = {})
   return { skipped: false, added, difficulty: useDifficulty };
 }
 
-async function trySyncToDrive() {
+async function trySyncToDrive({ force = false } = {}) {
   const config = await getConfig();
-  if (!config.autoSync) return { success: true, skipped: true, reason: 'autoSync disabled' };
+  if (!force && !config.autoSync) return { success: true, skipped: true, reason: 'autoSync disabled' };
 
   const connected = await checkDriveConnection();
   if (!connected) return { success: true, skipped: true, reason: 'Drive chưa kết nối' };
@@ -159,7 +160,7 @@ async function checkAndRestoreAfterLogin() {
     }
 
     if (localCount > 0 && driveCount === 0) {
-      await trySyncToDrive();
+      await trySyncToDrive({ force: true });
       return { success: true, conflict: false };
     }
 
@@ -182,7 +183,7 @@ async function checkAndRestoreAfterLogin() {
 async function resolveConflict(strategy) {
   try {
     if (strategy === 'local') {
-      await trySyncToDrive();
+      await trySyncToDrive({ force: true });
       return { success: true };
     }
 
@@ -217,7 +218,7 @@ async function resolveConflict(strategy) {
 
       const merged = Array.from(byWord.values());
       await saveCards(merged);
-      await trySyncToDrive();
+      await trySyncToDrive({ force: true });
       return { success: true, count: merged.length };
     }
 
@@ -236,9 +237,17 @@ export async function sendAppMessage(msg = {}) {
         return { success: true };
       }
       case 'SYNC_NOW': {
-        return await trySyncToDrive();
+        return await trySyncToDrive({ force: msg.force !== false });
       }
       case 'CONNECT_DRIVE':
+      case 'ENSURE_DRIVE_AUTH': {
+        try {
+          const user = await ensureDriveAuth();
+          return { success: true, user };
+        } catch (err) {
+          return { success: false, error: err.message };
+        }
+      }
       case 'LOGIN_NEW_USER': {
         try {
           const user = await loginNewUser();
@@ -267,6 +276,7 @@ export async function sendAppMessage(msg = {}) {
           const result = await generateBatch({
             count: msg.count || 10,
             difficulty: msg.difficulty,
+            theme: msg.theme || '',
             skipDailyCheck: true
           });
           trySyncToDrive().catch(() => {});

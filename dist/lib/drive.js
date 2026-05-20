@@ -12,8 +12,8 @@ function getDbFilename(userId) {
   return `flashcards-${userId}.json`;
 }
 
-async function driveFetch(url, options = {}, retry = true) {
-  const token = await getAccessToken();
+async function driveFetch(url, options = {}, retry = true, forceRefresh = false) {
+  const token = await getAccessToken({ forceRefresh });
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -23,7 +23,7 @@ async function driveFetch(url, options = {}, retry = true) {
   });
 
   if (res.status === 401 && retry) {
-    return driveFetch(url, options, false);
+    return driveFetch(url, options, false, true);
   }
   return res;
 }
@@ -149,14 +149,13 @@ export async function saveToDrive(payload) {
 }
 
 /**
- * Kiểm tra connection (có user, token còn hạn).
+ * Kiểm tra app còn giữ phiên đăng nhập Drive hay không.
+ * Access token ngắn hạn sẽ được refresh khi thao tác Drive thật sự chạy.
  */
 export async function checkDriveConnection() {
   try {
     const user = await getCurrentUser();
-    if (!user) return false;
-    await getAccessToken();
-    return true;
+    return Boolean(user);
   } catch {
     return false;
   }

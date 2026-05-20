@@ -84,8 +84,8 @@ function bindHandlers() {
   });
 
   $('btnConnectDrive').addEventListener('click', async () => {
-    toast('🔄 Đang mở dialog đăng nhập Google...', 30000);
-    const res = await sendAppMessage({ type: 'LOGIN_NEW_USER' });
+    toast('🔄 Đang kết nối Google Drive...', 30000);
+    const res = await sendAppMessage({ type: 'ENSURE_DRIVE_AUTH' });
     if (res?.success && res.user) {
       updateDriveStatus('connected');
       toast(`✓ Đã đăng nhập: ${res.user.email}`, 4000);
@@ -131,7 +131,11 @@ function bindHandlers() {
   $('btnSyncNow').addEventListener('click', async () => {
     toast('☁️ Đang đồng bộ...');
     const res = await sendAppMessage({ type: 'SYNC_NOW' });
-    toast(res?.success ? '✓ Đồng bộ thành công' : '✗ Lỗi');
+    if (res?.success) {
+      toast(res.skipped ? `✓ ${res.reason || 'Không cần đồng bộ'}` : '✓ Đồng bộ thành công');
+    } else {
+      toast('✗ ' + (res?.error || 'Lỗi đồng bộ'), 7000);
+    }
   });
 
   $('btnClearData').addEventListener('click', async () => {

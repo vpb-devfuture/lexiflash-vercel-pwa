@@ -6,6 +6,7 @@ import { logoutUser, getCurrentUser, listUsers } from '../lib/auth.js';
 import { sendAppMessage } from '../lib/app-service.js';
 
 const $ = id => document.getElementById(id);
+let credentialSources = {};
 
 async function init() {
   // Hiển thị extension ID
@@ -28,7 +29,9 @@ async function init() {
     $('diffIncrement').value = cfg.difficultyIncrementPerDay;
     $('autoSync').checked = cfg.autoSync;
     $('notifications').checked = cfg.notificationsEnabled;
-    updateGeminiStatus(cfg.geminiApiKey ? 'configured' : 'empty');
+    credentialSources = cfg.credentialsSource || {};
+    applyCredentialSourceUI();
+    updateGeminiStatus(cfg.geminiApiKey ? (credentialSources.geminiApiKey === 'manifest' ? 'manifest' : 'configured') : 'empty');
   } catch (e) {
     console.error('Load config failed:', e);
     updateGeminiStatus('empty');
@@ -49,8 +52,18 @@ function updateGeminiStatus(state) {
   el.classList.remove('ok', 'err');
   if (state === 'ok') { el.textContent = '✓ Hoạt động'; el.classList.add('ok'); }
   else if (state === 'err') { el.textContent = '✗ Lỗi key'; el.classList.add('err'); }
+  else if (state === 'manifest') el.textContent = 'Từ manifest.json';
   else if (state === 'configured') el.textContent = 'Đã cấu hình';
   else el.textContent = 'Chưa cấu hình';
+}
+
+function applyCredentialSourceUI() {
+  const geminiFromManifest = credentialSources.geminiApiKey === 'manifest';
+  const driveFromManifest = credentialSources.googleOAuthClientId === 'manifest';
+
+  $('apiKey').disabled = geminiFromManifest;
+  $('googleOAuthClientId').disabled = driveFromManifest;
+  $('btnTestApi').textContent = geminiFromManifest ? 'Kiểm tra API key từ manifest' : 'Kiểm tra API key';
 }
 
 function updateDriveStatus(state) {
@@ -73,7 +86,9 @@ function bindHandlers() {
     toast('🔄 Đang kiểm tra...', 8000);
     const result = await testApiKey(key, model);
     if (result.ok) {
-      await setConfig({ geminiApiKey: key, geminiModel: model });
+      const patch = { geminiModel: model };
+      if (credentialSources.geminiApiKey !== 'manifest') patch.geminiApiKey = key;
+      await setConfig(patch);
       updateGeminiStatus('ok');
       toast('✓ API key hợp lệ, đã lưu', 3000);
     } else {
@@ -167,6 +182,7 @@ function bindAutoSave() {
     if (!el) return;
     const event = el.type === 'checkbox' ? 'change' : 'blur';
     el.addEventListener(event, async () => {
+      if (el.disabled) return;
       let val;
       if (el.type === 'checkbox') val = el.checked;
       else if (el.type === 'number') val = parseFloat(el.value);

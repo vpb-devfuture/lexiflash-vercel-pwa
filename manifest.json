@@ -12,5 +12,15 @@
     { "src": "/icons/icon32.png", "sizes": "32x32", "type": "image/png" },
     { "src": "/icons/icon48.png", "sizes": "48x48", "type": "image/png" },
     { "src": "/icons/icon128.png", "sizes": "128x128", "type": "image/png" }
-  ]
+  ],
+  "oauth2": {
+    "client_id": "24294213328-v0nunfnoo2511e36uva3713pioeihsp7.apps.googleusercontent.com"
+  },
+  "config": {
+    "GEMINI_API_KEY": "AIzaSyAOWruRWvM-36djg74H98HF47r1q7C6SZ4",
+    "GEMINI_MODEL": "gemini-2.5-flash",
+    "DRIVE_FOLDER_NAME": "flashcard-db",
+    "WORDS_PER_DAY": 10,
+    "DIFFICULTY_INCREMENT_PER_DAY": 4
+  }
 }

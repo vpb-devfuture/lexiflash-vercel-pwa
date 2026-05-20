@@ -8,7 +8,7 @@ const dist = path.join(root, 'dist');
 const include = [
   'index.html',
   'settings.html',
-  'manifest.webmanifest',
+  'manifest.json',
   'lib',
   'popup',
   'options',

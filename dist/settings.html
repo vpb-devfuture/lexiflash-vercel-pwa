@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon32.png" />
   <link rel="stylesheet" href="/options/options.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -32,8 +32,9 @@
           <span class="status-pill" id="geminiStatus">Chưa kiểm tra</span>
         </div>
         <p class="section-desc">
-          Cần API key để sinh nội dung flashcard. Lấy miễn phí tại
-          <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+          Cần API key để sinh nội dung flashcard. Có thể đặt trong
+          <code>config.GEMINI_API_KEY</code> của <code>manifest.json</code> hoặc nhập thủ công bên dưới.
+          Lấy miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
         </p>
 
         <div class="field">
@@ -42,6 +43,7 @@
             <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off" />
             <button class="toggle-visibility" id="togglePw" type="button">👁</button>
           </div>
+          <small>Nếu <code>manifest.json</code> đã có key, trường này chỉ hiển thị giá trị đang dùng.</small>
         </div>
 
         <div class="field">
@@ -68,7 +70,8 @@
         </div>
         <p class="section-desc">
           Dữ liệu flashcard được lưu trong folder <code>flashcard-db</code> trên Google Drive của bạn.
-          Cần OAuth Web Client ID (xem hướng dẫn bên dưới).
+          Cần OAuth Web Client ID trong <code>oauth2.client_id</code> của <code>manifest.json</code>
+          hoặc nhập thủ công bên dưới.
         </p>
 
 
@@ -76,7 +79,7 @@
         <div class="field">
           <label for="googleOAuthClientId">Google OAuth Web Client ID</label>
           <input type="text" id="googleOAuthClientId" placeholder="xxx.apps.googleusercontent.com" autocomplete="off" />
-          <small>Dùng OAuth client type <strong>Web application</strong>, không dùng Chrome Extension client ID.</small>
+          <small>Dùng OAuth client type <strong>Web application</strong>. Nếu <code>manifest.json</code> đã có client ID, trường này chỉ hiển thị giá trị đang dùng.</small>
         </div>
 
         <div class="field">
@@ -149,7 +152,7 @@
           <li>Vào "Credentials" → "Create Credentials" → "OAuth client ID".</li>
           <li>Chọn application type: <strong>Web application</strong>.</li>
           <li>Trong <strong>Authorized JavaScript origins</strong>, thêm origin local/deploy, ví dụ <code>http://localhost:3000</code> và domain Vercel của bạn.</li>
-          <li>Copy Client ID và dán vào trường <strong>Google OAuth Web Client ID</strong> ở trên.</li>
+          <li>Copy Client ID vào <code>oauth2.client_id</code> trong <code>manifest.json</code> hoặc dán vào trường <strong>Google OAuth Web Client ID</strong> ở trên.</li>
         </ol>
 
         <p class="footnote">

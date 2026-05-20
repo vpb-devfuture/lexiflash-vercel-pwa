@@ -48,7 +48,7 @@ async function init() {
 
   // STEP 1: Check OAuth client_id configured
   if (!isClientIdConfigured()) {
-    showLoginState('⚠️ OAuth chưa cấu hình. Vào Settings để xem hướng dẫn.', true);
+    showLoginState('⚠️ OAuth chưa cấu hình. Thêm client_id vào manifest.json hoặc mở Settings.', true);
     return;
   }
 
@@ -341,7 +341,7 @@ async function bindEmptyState() {
   const hasKey = config.geminiApiKey && config.geminiApiKey !== 'YOUR_GEMINI_API_KEY_HERE';
 
   if (!hasKey) {
-    $('emptyMessage').innerHTML = '⚠️ Chưa có Gemini API key.<br>Mở <strong>Cài đặt</strong> để cấu hình trước khi học.';
+    $('emptyMessage').innerHTML = '⚠️ Chưa có Gemini API key.<br>Thêm key vào <strong>manifest.json</strong> hoặc mở Cài đặt.';
     $('btnGenerate').style.display = 'none';
   }
 
@@ -349,7 +349,7 @@ async function bindEmptyState() {
 
   $('btnGenerate').addEventListener('click', async () => {
     if (!hasKey) {
-      toast('⚠️ Cần API key trước. Mở Settings.');
+      toast('⚠️ Cần API key trong manifest.json hoặc Settings.');
       setTimeout(() => openSettings(), 1200);
       return;
     }

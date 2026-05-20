@@ -26,6 +26,13 @@ const DEPRECATED_MODELS = new Set([
 ]);
 const FALLBACK_MODEL = 'gemini-2.5-flash';
 
+function configuredSecret(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.includes('YOUR_')) return '';
+  return trimmed;
+}
+
 /**
  * Đọc config: global (sync storage) + per-user state (local storage).
  * - Global: API key, model, wordsPerDay, autoSync, notifications (dùng chung tất cả user)
@@ -35,9 +42,15 @@ export async function getConfig() {
   // Lấy từ manifest
   const manifest = chrome.runtime.getManifest();
   const manifestConfig = manifest.config || {};
+  const manifestGeminiApiKey = configuredSecret(manifestConfig.GEMINI_API_KEY);
+  const manifestGoogleOAuthClientId = configuredSecret(
+    manifest.oauth2?.client_id || manifestConfig.GOOGLE_OAUTH_CLIENT_ID
+  );
 
   // Global config từ sync storage
   const stored = await chrome.storage.sync.get(null);
+  const storedGeminiApiKey = configuredSecret(stored.geminiApiKey);
+  const storedGoogleOAuthClientId = configuredSecret(stored.googleOAuthClientId);
 
   // Auto-migrate deprecated models
   let model = stored.geminiModel || manifestConfig.GEMINI_MODEL || DEFAULTS.geminiModel;
@@ -53,8 +66,8 @@ export async function getConfig() {
   return {
     ...DEFAULTS,
     // Global
-    geminiApiKey: stored.geminiApiKey || manifestConfig.GEMINI_API_KEY || '',
-    googleOAuthClientId: stored.googleOAuthClientId || manifest.oauth2?.client_id || DEFAULTS.googleOAuthClientId,
+    geminiApiKey: manifestGeminiApiKey || storedGeminiApiKey || '',
+    googleOAuthClientId: manifestGoogleOAuthClientId || storedGoogleOAuthClientId || DEFAULTS.googleOAuthClientId,
     geminiModel: model,
     driveFolderName: stored.driveFolderName || manifestConfig.DRIVE_FOLDER_NAME || DEFAULTS.driveFolderName,
     wordsPerDay: stored.wordsPerDay ?? manifestConfig.WORDS_PER_DAY ?? DEFAULTS.wordsPerDay,
@@ -62,6 +75,10 @@ export async function getConfig() {
     autoSync: stored.autoSync ?? DEFAULTS.autoSync,
     notificationsEnabled: stored.notificationsEnabled ?? DEFAULTS.notificationsEnabled,
     theme: stored.theme || DEFAULTS.theme,
+    credentialsSource: {
+      geminiApiKey: manifestGeminiApiKey ? 'manifest' : (storedGeminiApiKey ? 'storage' : 'empty'),
+      googleOAuthClientId: manifestGoogleOAuthClientId ? 'manifest' : (storedGoogleOAuthClientId ? 'storage' : 'empty')
+    },
     // Per-user
     currentDifficulty: userState.currentDifficulty ?? DEFAULTS.currentDifficulty,
     lastGenerationDate: userState.lastGenerationDate || null

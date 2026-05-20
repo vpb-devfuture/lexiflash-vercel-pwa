@@ -106,7 +106,7 @@ async function callGemini(prompt, schema, apiKey, model) {
 export async function generateDailyWords({ count = 10, difficulty = 1, exclude = [], theme = '' } = {}) {
   const config = await getConfig();
   if (!config.geminiApiKey || config.geminiApiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    throw new Error('Chưa cấu hình Gemini API key. Vào trang Options để thiết lập.');
+    throw new Error('Chưa cấu hình Gemini API key trong manifest.json hoặc Settings.');
   }
 
   const excludeStr = exclude.length > 0
@@ -179,7 +179,7 @@ const SENTENCE_EVAL_SCHEMA = {
 export async function evaluateSentence({ sentence, requiredWords }) {
   const config = await getConfig();
   if (!config.geminiApiKey || config.geminiApiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    throw new Error('Chưa cấu hình Gemini API key.');
+    throw new Error('Chưa cấu hình Gemini API key trong manifest.json hoặc Settings.');
   }
 
   const prompt = `Bạn là giáo viên tiếng Anh nghiêm khắc nhưng công bằng, chấm bài cho học viên người Việt.

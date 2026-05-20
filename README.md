@@ -11,7 +11,7 @@ LexiFlash là ứng dụng web/PWA học từ vựng tiếng Anh bằng flashcar
 - Đăng nhập nhiều Google account và chuyển tài khoản trong app.
 - Đồng bộ flashcard lên Google Drive, mỗi user có một file dữ liệu riêng.
 - Khôi phục dữ liệu từ Drive, xử lý conflict giữa dữ liệu local và dữ liệu cloud.
-- Chạy như PWA với `manifest.webmanifest`.
+- Chạy như PWA với `manifest.json`.
 - Deploy tĩnh lên Vercel, không cần backend riêng.
 
 ## Tech stack
@@ -81,7 +81,7 @@ Build script sẽ xoá và tạo lại thư mục `dist/`, sau đó copy các st
 
 - `index.html`
 - `settings.html`
-- `manifest.webmanifest`
+- `manifest.json`
 - `lib/`
 - `popup/`
 - `options/`
@@ -115,10 +115,20 @@ Vercel rewrite có sẵn:
 
 ## Cấu hình Gemini
 
-1. Mở `http://localhost:3000/settings.html`.
-2. Nhập Gemini API key.
-3. Chọn model.
-4. Bấm kiểm tra API key.
+Ưu tiên cấu hình: `manifest.json` trước, storage trong Settings sau. Nếu `manifest.json` đã có key, app dùng trực tiếp và không bắt nhập lại trong Settings.
+
+Trong `manifest.json`:
+
+```json
+{
+  "config": {
+    "GEMINI_API_KEY": "AIza...",
+    "GEMINI_MODEL": "gemini-2.5-flash"
+  }
+}
+```
+
+Settings vẫn có thể dùng để test API key hoặc nhập key thủ công khi `manifest.json` để trống.
 
 Giá trị mặc định trong code:
 
@@ -129,7 +139,7 @@ currentDifficulty: 1
 difficultyIncrementPerDay: 1
 ```
 
-Không hardcode API key vào source. API key được lưu trong storage của trình duyệt theo origin hiện tại.
+Lưu ý: nếu repo/deploy public, không commit API key thật vào `manifest.json`; hãy để trống và nhập trong Settings.
 
 ## Cấu hình Google Drive Sync
 
@@ -146,8 +156,20 @@ http://localhost:3000
 https://<your-vercel-domain>
 ```
 
-6. Copy Client ID vào `Settings -> Google OAuth Web Client ID`.
+6. Copy Client ID vào `oauth2.client_id` trong `manifest.json`.
 7. Bấm kết nối Google Drive trong app.
+
+Ví dụ:
+
+```json
+{
+  "oauth2": {
+    "client_id": "xxx.apps.googleusercontent.com"
+  }
+}
+```
+
+Settings vẫn có thể nhập Client ID thủ công nếu `manifest.json` để trống.
 
 Scope app sử dụng:
 
@@ -188,7 +210,7 @@ Lưu ý: dữ liệu local gắn với origin/domain. Nếu đổi domain deploy
 lexiflash-vercel/
 ├── index.html
 ├── settings.html
-├── manifest.webmanifest
+├── manifest.json
 ├── vercel.json
 ├── package.json
 ├── scripts/
@@ -232,7 +254,7 @@ lexiflash-vercel/
 - Tác vụ tự động theo alarm của extension không còn chạy khi app không được mở.
 - OAuth phải dùng client type **Web application**, không dùng client type **Chrome Extension**.
 - Dữ liệu local phụ thuộc origin của website.
-- Cấu hình Gemini API key và Google OAuth Client ID được nhập trong Settings, không hardcode trong manifest/source.
+- Gemini API key và Google OAuth Client ID có thể đặt trong `manifest.json`; Settings chỉ là fallback khi manifest để trống.
 
 ## Troubleshooting
 
@@ -245,7 +267,7 @@ lexiflash-vercel/
 
 ### Không sinh được flashcard
 
-- Kiểm tra Gemini API key trong Settings.
+- Kiểm tra Gemini API key trong `manifest.json` hoặc Settings.
 - Bấm test API key để xác nhận key hợp lệ.
 - Kiểm tra model đang chọn còn được Gemini API hỗ trợ.
 - Kiểm tra trình duyệt có chặn request tới Google API không.
@@ -264,10 +286,10 @@ lexiflash-vercel/
 
 ## Bảo mật
 
-- Không commit Gemini API key hoặc OAuth secret vào repository.
+- Không commit Gemini API key thật vào repository public.
 - Web OAuth flow này chỉ cần OAuth Client ID, không dùng client secret ở frontend.
 - Dữ liệu học được lưu trong trình duyệt và trong Google Drive của user khi bật sync.
-- Nếu deploy public, người dùng nên tự nhập API key và Client ID của họ trong Settings.
+- Nếu deploy public, nên để key/client ID trống trong `manifest.json` và để người dùng tự nhập trong Settings.
 
 ## License
 

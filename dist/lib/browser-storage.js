@@ -23,6 +23,60 @@ const DEFAULT_MANIFEST = {
   }
 };
 
+const WEB_MANIFEST_PATHS = [
+  '/manifest.json'
+];
+
+function mergeManifest(base, override = {}) {
+  return {
+    ...base,
+    ...override,
+    oauth2: {
+      ...(base.oauth2 || {}),
+      ...(override.oauth2 || {})
+    },
+    config: {
+      ...(base.config || {}),
+      ...(override.config || {})
+    }
+  };
+}
+
+async function fetchManifest(path) {
+  try {
+    const url = new URL(path, window.location.origin).toString();
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function loadRuntimeManifest() {
+  if (window.LEXIFLASH_MANIFEST) {
+    return mergeManifest(DEFAULT_MANIFEST, window.LEXIFLASH_MANIFEST);
+  }
+
+  const nativeGetManifest = window.chrome?.runtime?.getManifest;
+  if (typeof nativeGetManifest === 'function') {
+    try {
+      return mergeManifest(DEFAULT_MANIFEST, nativeGetManifest.call(window.chrome.runtime));
+    } catch {
+      // Fall through to the web manifest loader.
+    }
+  }
+
+  for (const path of WEB_MANIFEST_PATHS) {
+    const manifest = await fetchManifest(path);
+    if (manifest) return mergeManifest(DEFAULT_MANIFEST, manifest);
+  }
+
+  return DEFAULT_MANIFEST;
+}
+
+let runtimeManifest = await loadRuntimeManifest();
+
 function storageKey(area, key) {
   return `${PREFIX[area]}${key}`;
 }
@@ -99,7 +153,10 @@ function createStorageArea(area) {
 }
 
 function getManifest() {
-  return window.LEXIFLASH_MANIFEST || DEFAULT_MANIFEST;
+  if (window.LEXIFLASH_MANIFEST) {
+    runtimeManifest = mergeManifest(DEFAULT_MANIFEST, window.LEXIFLASH_MANIFEST);
+  }
+  return runtimeManifest;
 }
 
 function getURL(path) {

@@ -264,6 +264,62 @@ function parseGeminiError(status, rawText, model) {
   return message;
 }
 
+function buildThinkingConfig(model) {
+  const value = String(model || '').toLowerCase();
+
+  if (value.startsWith('gemini-3')) {
+    return { thinkingLevel: 'low' };
+  }
+
+  if (value.startsWith('gemini-2.5-flash')) {
+    return { thinkingBudget: 0 };
+  }
+
+  if (value.startsWith('gemini-2.5-pro')) {
+    return { thinkingBudget: 128 };
+  }
+
+  return null;
+}
+
+function extractGeminiText(data) {
+  const candidates = Array.isArray(data?.candidates) ? data.candidates : [];
+  return candidates
+    .flatMap(candidate => Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [])
+    .filter(part => !part?.thought && typeof part?.text === 'string')
+    .map(part => part.text)
+    .join('\n')
+    .trim();
+}
+
+function getUsageValue(usage, camelKey, snakeKey) {
+  return usage?.[camelKey] ?? usage?.[snakeKey];
+}
+
+function explainEmptyGeminiResponse(data) {
+  const promptBlockReason = data?.promptFeedback?.blockReason;
+  if (promptBlockReason) {
+    return `Gemini chặn prompt (${promptBlockReason}). Hãy chỉnh nội dung yêu cầu và thử lại.`;
+  }
+
+  const candidate = Array.isArray(data?.candidates) ? data.candidates[0] : null;
+  const finishReason = candidate?.finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    return 'Gemini hết giới hạn output token trước khi trả nội dung. Hãy thử lại hoặc chọn model nhanh hơn.';
+  }
+  if (finishReason && finishReason !== 'STOP') {
+    return `Gemini không trả nội dung (finishReason: ${finishReason}). Hãy thử lại hoặc chọn model khác.`;
+  }
+
+  const usage = data?.usageMetadata || data?.usage_metadata || {};
+  const thoughtsTokenCount = getUsageValue(usage, 'thoughtsTokenCount', 'thoughts_token_count');
+  if (Number(thoughtsTokenCount) > 0) {
+    return `Gemini đã dùng ${thoughtsTokenCount} thinking token nhưng không trả nội dung. Hãy thử lại hoặc chọn model nhanh hơn.`;
+  }
+
+  return 'Gemini trả về dữ liệu rỗng.';
+}
+
 async function callGemini({ prompt, schema, model, maxOutputTokens = 8192 }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -275,6 +331,11 @@ async function callGemini({ prompt, schema, model, maxOutputTokens = 8192 }) {
     topP: 0.95,
     maxOutputTokens
   };
+
+  const thinkingConfig = buildThinkingConfig(model);
+  if (thinkingConfig) {
+    generationConfig.thinkingConfig = thinkingConfig;
+  }
 
   if (schema) {
     generationConfig.responseMimeType = 'application/json';
@@ -296,9 +357,9 @@ async function callGemini({ prompt, schema, model, maxOutputTokens = 8192 }) {
   }
 
   const data = await upstream.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = extractGeminiText(data);
   if (!text) {
-    throw new HttpError(502, 'Gemini trả về dữ liệu rỗng.');
+    throw new HttpError(502, explainEmptyGeminiResponse(data));
   }
 
   if (!schema) return text;
@@ -331,7 +392,7 @@ async function handler(req, res) {
     const model = normalizeModel(body.model);
 
     if (action === 'test') {
-      await callGemini({ prompt: 'Say "ok".', model, maxOutputTokens: 10 });
+      await callGemini({ prompt: 'Say "ok".', model, maxOutputTokens: 256 });
       return sendJson(req, res, 200, { ok: true, result: { ok: true } });
     }
 

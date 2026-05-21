@@ -12,13 +12,14 @@ LexiFlash là ứng dụng web/PWA học từ vựng tiếng Anh bằng flashcar
 - Đồng bộ flashcard lên Google Drive, mỗi user có một file dữ liệu riêng.
 - Khôi phục dữ liệu từ Drive, xử lý conflict giữa dữ liệu local và dữ liệu cloud.
 - Chạy như PWA với `manifest.json`.
-- Deploy tĩnh lên Vercel, không cần backend riêng.
+- Deploy lên Vercel với static frontend và một serverless function cho Gemini.
 
 ## Tech stack
 
 - HTML, CSS, JavaScript ES Modules.
 - Không dùng framework frontend.
 - Không có runtime dependency trong `package.json`.
+- Vercel Serverless Function ở `api/gemini.js` để giữ Gemini API key ở phía server.
 - Google Gemini API cho sinh flashcard và chấm câu.
 - Google Identity Services OAuth token flow.
 - Google Drive API với scope `drive.file`.
@@ -104,8 +105,9 @@ Cách deploy:
 1. Import repository vào Vercel.
 2. Giữ build command là `npm run build`.
 3. Giữ output directory là `dist`.
-4. Deploy.
-5. Thêm domain Vercel vào Authorized JavaScript origins của OAuth Client ID.
+4. Vào **Settings -> Environment Variables** và thêm `GEMINI_API_KEY`.
+5. Deploy lại sau khi thêm biến môi trường.
+6. Thêm domain Vercel vào Authorized JavaScript origins của OAuth Client ID.
 
 Vercel rewrite có sẵn:
 
@@ -115,20 +117,36 @@ Vercel rewrite có sẵn:
 
 ## Cấu hình Gemini
 
-Ưu tiên cấu hình: `manifest.json` trước, storage trong Settings sau. Nếu `manifest.json` đã có key, app dùng trực tiếp và không bắt nhập lại trong Settings.
+Gemini API key phải nằm ở server, không nằm trong `manifest.json`, Settings, `localStorage` hoặc bất kỳ file frontend nào.
 
-Trong `manifest.json`:
+Trên Vercel:
 
-```json
-{
-  "config": {
-    "GEMINI_API_KEY": "AIza...",
-    "GEMINI_MODEL": "gemini-2.5-flash"
-  }
-}
+1. Mở project trên Vercel.
+2. Vào **Settings -> Environment Variables**.
+3. Thêm biến:
+
+```text
+GEMINI_API_KEY=AIza...
 ```
 
-Settings vẫn có thể dùng để test API key hoặc nhập key thủ công khi `manifest.json` để trống.
+4. Chọn áp dụng cho **Production**, **Preview** và **Development** nếu bạn dùng đủ ba môi trường.
+5. Bấm **Save**.
+6. Vào tab **Deployments** và redeploy bản mới nhất, hoặc push commit mới.
+
+Frontend gọi `/api/gemini`; serverless function này mới gọi Google Gemini bằng `process.env.GEMINI_API_KEY`.
+
+Chạy local bằng PowerShell:
+
+```powershell
+$env:GEMINI_API_KEY="AIza..."
+npm run dev
+```
+
+Chạy local bằng bash/zsh:
+
+```bash
+GEMINI_API_KEY="AIza..." npm run dev
+```
 
 Giá trị mặc định trong code:
 
@@ -139,7 +157,7 @@ currentDifficulty: 1
 difficultyIncrementPerDay: 1
 ```
 
-Lưu ý: nếu repo/deploy public, không commit API key thật vào `manifest.json`; hãy để trống và nhập trong Settings.
+Settings chỉ dùng để chọn model và kiểm tra Gemini backend, không nhập hoặc lưu API key.
 
 ## Cấu hình Google Drive Sync
 
@@ -181,7 +199,7 @@ openid email profile https://www.googleapis.com/auth/drive.file
 
 LexiFlash tách dữ liệu thành hai nhóm:
 
-- Global config: Gemini API key, Gemini model, Google OAuth Client ID, số từ mỗi ngày, auto sync.
+- Global config: Gemini model, Google OAuth Client ID, số từ mỗi ngày, auto sync.
 - Per-user state: độ khó hiện tại, ngày sinh từ gần nhất, streak và flashcards của user.
 
 Flashcard được lưu local theo user:
@@ -213,6 +231,8 @@ lexiflash-vercel/
 ├── manifest.json
 ├── vercel.json
 ├── package.json
+├── api/
+│   └── gemini.js
 ├── scripts/
 │   ├── build.js
 │   └── dev-server.js
@@ -254,7 +274,8 @@ lexiflash-vercel/
 - Tác vụ tự động theo alarm của extension không còn chạy khi app không được mở.
 - OAuth phải dùng client type **Web application**, không dùng client type **Chrome Extension**.
 - Dữ liệu local phụ thuộc origin của website.
-- Gemini API key và Google OAuth Client ID có thể đặt trong `manifest.json`; Settings chỉ là fallback khi manifest để trống.
+- Gemini API key không còn nằm trong frontend; app gọi `/api/gemini` trên Vercel.
+- Google OAuth Client ID vẫn là public identifier, có thể đặt trong `manifest.json` hoặc Settings.
 
 ## Troubleshooting
 
@@ -267,10 +288,11 @@ lexiflash-vercel/
 
 ### Không sinh được flashcard
 
-- Kiểm tra Gemini API key trong `manifest.json` hoặc Settings.
-- Bấm test API key để xác nhận key hợp lệ.
+- Kiểm tra Vercel Environment Variable `GEMINI_API_KEY`.
+- Sau khi thêm/sửa env var, redeploy project trên Vercel.
+- Bấm test Gemini backend trong Settings để xác nhận serverless function hoạt động.
 - Kiểm tra model đang chọn còn được Gemini API hỗ trợ.
-- Kiểm tra trình duyệt có chặn request tới Google API không.
+- Kiểm tra request tới `/api/gemini` có trả lỗi cụ thể không.
 
 ### Không thấy dữ liệu sau khi deploy domain mới
 
@@ -287,9 +309,10 @@ lexiflash-vercel/
 ## Bảo mật
 
 - Không commit Gemini API key thật vào repository public.
+- Không đưa Gemini API key vào biến frontend như `VITE_*`, `NEXT_PUBLIC_*`, `manifest.json` hoặc Settings.
 - Web OAuth flow này chỉ cần OAuth Client ID, không dùng client secret ở frontend.
 - Dữ liệu học được lưu trong trình duyệt và trong Google Drive của user khi bật sync.
-- Nếu deploy public, nên để key/client ID trống trong `manifest.json` và để người dùng tự nhập trong Settings.
+- `/api/gemini` kiểm tra same-origin để giảm gọi chéo từ web khác, nhưng endpoint public vẫn có thể bị lạm dụng nếu domain public. Theo dõi quota Gemini và cân nhắc thêm auth/rate limit nếu mở rộng cho nhiều người dùng.
 
 ## License
 

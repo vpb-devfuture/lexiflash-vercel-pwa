@@ -20,7 +20,6 @@ async function init() {
   // Load config hiện tại (an toàn nếu fail)
   try {
     const cfg = await getConfig();
-    $('apiKey').value = cfg.geminiApiKey || '';
     $('model').value = cfg.geminiModel;
     $('googleOAuthClientId').value = cfg.googleOAuthClientId || '';
     $('folderName').value = cfg.driveFolderName;
@@ -31,7 +30,7 @@ async function init() {
     $('notifications').checked = cfg.notificationsEnabled;
     credentialSources = cfg.credentialsSource || {};
     applyCredentialSourceUI();
-    updateGeminiStatus(cfg.geminiApiKey ? (credentialSources.geminiApiKey === 'manifest' ? 'manifest' : 'configured') : 'empty');
+    updateGeminiStatus('server');
   } catch (e) {
     console.error('Load config failed:', e);
     updateGeminiStatus('empty');
@@ -51,19 +50,17 @@ function updateGeminiStatus(state) {
   const el = $('geminiStatus');
   el.classList.remove('ok', 'err');
   if (state === 'ok') { el.textContent = '✓ Hoạt động'; el.classList.add('ok'); }
-  else if (state === 'err') { el.textContent = '✗ Lỗi key'; el.classList.add('err'); }
-  else if (state === 'manifest') el.textContent = 'Từ manifest.json';
+  else if (state === 'err') { el.textContent = '✗ Lỗi backend'; el.classList.add('err'); }
+  else if (state === 'server') el.textContent = 'Vercel env';
   else if (state === 'configured') el.textContent = 'Đã cấu hình';
   else el.textContent = 'Chưa cấu hình';
 }
 
 function applyCredentialSourceUI() {
-  const geminiFromManifest = credentialSources.geminiApiKey === 'manifest';
   const driveFromManifest = credentialSources.googleOAuthClientId === 'manifest';
 
-  $('apiKey').disabled = geminiFromManifest;
   $('googleOAuthClientId').disabled = driveFromManifest;
-  $('btnTestApi').textContent = geminiFromManifest ? 'Kiểm tra API key từ manifest' : 'Kiểm tra API key';
+  $('btnTestApi').textContent = 'Kiểm tra Gemini backend';
 }
 
 function updateDriveStatus(state) {
@@ -74,23 +71,14 @@ function updateDriveStatus(state) {
 }
 
 function bindHandlers() {
-  $('togglePw').addEventListener('click', () => {
-    const inp = $('apiKey');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-  });
-
   $('btnTestApi').addEventListener('click', async () => {
-    const key = $('apiKey').value.trim();
     const model = $('model').value;
-    if (!key) return toast('Nhập API key trước.');
-    toast('🔄 Đang kiểm tra...', 8000);
-    const result = await testApiKey(key, model);
+    toast('🔄 Đang kiểm tra Gemini backend...', 8000);
+    const result = await testApiKey('', model);
     if (result.ok) {
-      const patch = { geminiModel: model };
-      if (credentialSources.geminiApiKey !== 'manifest') patch.geminiApiKey = key;
-      await setConfig(patch);
+      await setConfig({ geminiModel: model });
       updateGeminiStatus('ok');
-      toast('✓ API key hợp lệ, đã lưu', 3000);
+      toast('✓ Gemini backend hoạt động, đã lưu model', 3000);
     } else {
       updateGeminiStatus('err');
       toast('✗ ' + (result.error || 'Không hợp lệ'), 6000);
@@ -166,7 +154,6 @@ function bindHandlers() {
 function bindAutoSave() {
   // Auto-save các field khi blur
   const autoSaveFields = {
-    apiKey: 'geminiApiKey',
     model: 'geminiModel',
     googleOAuthClientId: 'googleOAuthClientId',
     folderName: 'driveFolderName',

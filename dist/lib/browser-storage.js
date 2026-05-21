@@ -15,7 +15,6 @@ const DEFAULT_MANIFEST = {
     client_id: ''
   },
   config: {
-    GEMINI_API_KEY: '',
     GEMINI_MODEL: 'gemini-2.5-flash',
     DRIVE_FOLDER_NAME: 'flashcard-db',
     WORDS_PER_DAY: 10,

@@ -14,10 +14,9 @@
     { "src": "/icons/icon128.png", "sizes": "128x128", "type": "image/png" }
   ],
   "oauth2": {
-    "client_id": ""
+    "client_id": "24294213328-v0nunfnoo2511e36uva3713pioeihsp7.apps.googleusercontent.com"
   },
   "config": {
-    "GEMINI_API_KEY": "",
     "GEMINI_MODEL": "gemini-2.5-flash",
     "DRIVE_FOLDER_NAME": "flashcard-db",
     "WORDS_PER_DAY": 10,

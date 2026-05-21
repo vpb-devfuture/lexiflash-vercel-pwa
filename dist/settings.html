@@ -32,19 +32,9 @@
           <span class="status-pill" id="geminiStatus">Chưa kiểm tra</span>
         </div>
         <p class="section-desc">
-          Cần API key để sinh nội dung flashcard. Có thể đặt trong
-          <code>config.GEMINI_API_KEY</code> của <code>manifest.json</code> hoặc nhập thủ công bên dưới.
-          Lấy miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+          Gemini API key chỉ đọc từ server qua <code>process.env.GEMINI_API_KEY</code>.
+          Không đặt key trong <code>manifest.json</code>, Settings hoặc bất kỳ file frontend nào.
         </p>
-
-        <div class="field">
-          <label for="apiKey">Gemini API Key</label>
-          <div class="input-with-toggle">
-            <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off" />
-            <button class="toggle-visibility" id="togglePw" type="button">👁</button>
-          </div>
-          <small>Nếu <code>manifest.json</code> đã có key, trường này chỉ hiển thị giá trị đang dùng.</small>
-        </div>
 
         <div class="field">
           <label for="model">Model</label>
@@ -58,7 +48,7 @@
         </div>
 
         <div class="actions-row">
-          <button class="btn-secondary" id="btnTestApi">Kiểm tra API key</button>
+          <button class="btn-secondary" id="btnTestApi">Kiểm tra Gemini backend</button>
         </div>
       </section>
 

@@ -35,22 +35,23 @@ function configuredSecret(value) {
 
 /**
  * Đọc config: global (sync storage) + per-user state (local storage).
- * - Global: API key, model, wordsPerDay, autoSync, notifications (dùng chung tất cả user)
+ * - Global: model, wordsPerDay, autoSync, notifications (dùng chung tất cả user)
  * - Per-user: currentDifficulty, lastGenerationDate, streakData (mỗi user riêng)
  */
 export async function getConfig() {
   // Lấy từ manifest
   const manifest = chrome.runtime.getManifest();
   const manifestConfig = manifest.config || {};
-  const manifestGeminiApiKey = configuredSecret(manifestConfig.GEMINI_API_KEY);
   const manifestGoogleOAuthClientId = configuredSecret(
     manifest.oauth2?.client_id || manifestConfig.GOOGLE_OAUTH_CLIENT_ID
   );
 
   // Global config từ sync storage
   const stored = await chrome.storage.sync.get(null);
-  const storedGeminiApiKey = configuredSecret(stored.geminiApiKey);
   const storedGoogleOAuthClientId = configuredSecret(stored.googleOAuthClientId);
+  if (stored.geminiApiKey) {
+    await chrome.storage.sync.remove('geminiApiKey');
+  }
 
   // Auto-migrate deprecated models
   let model = stored.geminiModel || manifestConfig.GEMINI_MODEL || DEFAULTS.geminiModel;
@@ -66,7 +67,7 @@ export async function getConfig() {
   return {
     ...DEFAULTS,
     // Global
-    geminiApiKey: manifestGeminiApiKey || storedGeminiApiKey || '',
+    geminiApiKey: '',
     googleOAuthClientId: manifestGoogleOAuthClientId || storedGoogleOAuthClientId || DEFAULTS.googleOAuthClientId,
     geminiModel: model,
     driveFolderName: stored.driveFolderName || manifestConfig.DRIVE_FOLDER_NAME || DEFAULTS.driveFolderName,
@@ -76,7 +77,7 @@ export async function getConfig() {
     notificationsEnabled: stored.notificationsEnabled ?? DEFAULTS.notificationsEnabled,
     theme: stored.theme || DEFAULTS.theme,
     credentialsSource: {
-      geminiApiKey: manifestGeminiApiKey ? 'manifest' : (storedGeminiApiKey ? 'storage' : 'empty'),
+      geminiApiKey: 'server',
       googleOAuthClientId: manifestGoogleOAuthClientId ? 'manifest' : (storedGoogleOAuthClientId ? 'storage' : 'empty')
     },
     // Per-user
@@ -91,6 +92,7 @@ export async function setConfig(patch) {
   const perUser = {};
   const global = {};
   for (const [k, v] of Object.entries(patch)) {
+    if (k === 'geminiApiKey') continue;
     if (perUserKeys.includes(k)) perUser[k] = v;
     else global[k] = v;
   }

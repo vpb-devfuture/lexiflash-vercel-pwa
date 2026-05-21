@@ -20,6 +20,10 @@ const mime = {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`);
   let pathname = decodeURIComponent(url.pathname);
+  if (pathname === '/api/gemini') {
+    require('../api/gemini.js')(req, res);
+    return;
+  }
   if (pathname === '/') pathname = '/index.html';
   if (pathname === '/settings') pathname = '/settings.html';
 

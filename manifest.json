@@ -17,10 +17,9 @@
     "client_id": "24294213328-v0nunfnoo2511e36uva3713pioeihsp7.apps.googleusercontent.com"
   },
   "config": {
-    "GEMINI_API_KEY": "AIzaSyAOWruRWvM-36djg74H98HF47r1q7C6SZ4",
     "GEMINI_MODEL": "gemini-2.5-flash",
     "DRIVE_FOLDER_NAME": "flashcard-db",
     "WORDS_PER_DAY": 10,
-    "DIFFICULTY_INCREMENT_PER_DAY": 4
+    "DIFFICULTY_INCREMENT_PER_DAY": 1
   }
 }

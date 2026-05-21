@@ -336,23 +336,9 @@ function updateProgress() {
 
 // === Handlers ===
 async function bindEmptyState() {
-  // Check API key trước để hiển thị message phù hợp
-  const config = await getConfig();
-  const hasKey = config.geminiApiKey && config.geminiApiKey !== 'YOUR_GEMINI_API_KEY_HERE';
-
-  if (!hasKey) {
-    $('emptyMessage').innerHTML = '⚠️ Chưa có Gemini API key.<br>Thêm key vào <strong>manifest.json</strong> hoặc mở Cài đặt.';
-    $('btnGenerate').style.display = 'none';
-  }
-
   $('btnOpenSettings').addEventListener('click', () => openSettings());
 
   $('btnGenerate').addEventListener('click', async () => {
-    if (!hasKey) {
-      toast('⚠️ Cần API key trong manifest.json hoặc Settings.');
-      setTimeout(() => openSettings(), 1200);
-      return;
-    }
     showLoading('Đang sinh 10 từ đầu tiên... (có thể mất 15-30s)');
     const res = await sendAppMessage({ type: 'FORCE_GENERATE' });
     if (res?.success) {

@@ -29,10 +29,6 @@ async function generateBatch({ count, difficulty, theme = '', skipDailyCheck = f
     return { skipped: true, reason: 'Đã sinh từ hôm nay rồi.' };
   }
 
-  if (!config.geminiApiKey || config.geminiApiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    throw new Error('Thiếu Gemini API key. Cấu hình trong manifest.json hoặc Settings.');
-  }
-
   const existingCards = await loadCards();
   const exclude = existingCards.map(c => c.word);
 

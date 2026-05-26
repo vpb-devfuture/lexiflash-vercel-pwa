@@ -1,6 +1,6 @@
 {
   "name": "LexiFlash - Smart English Flashcards",
-  "short_name": "LexiFlash",
+  "short_name": "LexiFlash V2",
   "description": "Flashcard học tiếng Anh với SM-2, Gemini AI và Google Drive sync.",
   "start_url": "/",
   "scope": "/",
